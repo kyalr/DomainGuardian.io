@@ -13,36 +13,60 @@
 
     <!-- The following image URL tracks diagnostic data for this sample add-in. Please remove the image tag if you reuse this sample in your own code project. -->
     <img src="https://pnptelemetry.azurewebsites.net/pnp-officeaddins/samples/outlook-add-in-hello-world-run" />
-</body>
 
-<script>
-
-    Office.onReady((info) => {
-        if (info.host === Office.HostType.Outlook) {
-            document.getElementById("helloButton").onclick = sayHello;
-        }
-    });
-
-    /**
-     * Writes 'Hello world!' to a new message body.
-     */
-    function sayHello() {
-        Office.context.mailbox.item.body.setAsync(
-            "Hello world!",
-            {
-                coercionType: "html", // Write text as HTML
-            },
-
-            // Callback method to check that setAsync succeeded
-            function (asyncResult) {
-                if (asyncResult.status ==
-                    Office.AsyncResultStatus.Failed) {
-                    write(asyncResult.error.message);
-                }
+    <script>
+        Office.onReady((info) => {
+            if (info.host === Office.HostType.Outlook) {
+                document.getElementById("helloButton").onclick = sayHello;
             }
-        );
-    }
+        });
 
-</script>
+        /**
+         * Writes 'Hello world!' to a new message body.
+         */
+        function sayHello() {
+            // Extract domains from the email
+            var emailBody = Office.context.mailbox.item.body.getAsync(
+                "html",
+                function (asyncResult) {
+                    if (asyncResult.status == Office.AsyncResultStatus.Succeeded) {
+                        var emailHtml = asyncResult.value;
+                        var domains = extractDomains(emailHtml);
+
+                        // Add domains to the email body
+                        Office.context.mailbox.item.body.setAsync(
+                            "Hello world! Domains: " + domains.join(", "),
+                            {
+                                coercionType: "html", // Write text as HTML
+                            },
+                            function (asyncResult) {
+                                if (asyncResult.status == Office.AsyncResultStatus.Failed) {
+                                    write(asyncResult.error.message);
+                                }
+                            }
+                        );
+                    }
+                }
+            );
+        }
+
+        /**
+         * Extracts domains from the given HTML content.
+         */
+        function extractDomains(htmlContent) {
+            // Use a regular expression to find all domains in the HTML content
+            var regex = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+)(?:\/)?/g;
+            var matches = [];
+            var match;
+
+            while ((match = regex.exec(htmlContent)) !== null) {
+                matches.push(match[1]);
+            }
+
+            return matches;
+        }
+    </script>
+
+</body>
 
 </html>
